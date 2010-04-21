@@ -274,5 +274,7 @@ main (int    argc,
   clipboard = gtk_clipboard_get (gdk_atom_intern ("CLIPBOARD", FALSE));
   gtk_clipboard_set_image (clipboard, screenshot);
 
+  gtk_main ();
+
   return 0;
 }
