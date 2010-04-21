@@ -22,6 +22,7 @@ AC_TYPE_SIZE_T
 PKG_CHECK_MODULES(SCREENSHOT_GRABBER, [
     gtk+-2.0 >= 2.20
     gdk-2.0 >= 2.20
+    dbus-1 >= 1.2
 ])
 
 AC_CONFIG_FILES([
