@@ -27,54 +27,6 @@ along with Gyazolinux.  If not, see <http://www.gnu.org/licenses/>.
 
 GtkStatusIcon *status_icon = NULL;
 
-static size_t
-on_image_uploaded (void   *buffer,
-                   size_t  size,
-                   size_t  nmemb,
-                   void   *userp)
-{
-  GtkClipboard *clipboard;
-  char          command[1024];
-
-  clipboard = gtk_clipboard_get (gdk_atom_intern ("CLIPBOARD", FALSE));
-  gtk_clipboard_set_text (clipboard, buffer, (gint) (size * nmemb));
-  clipboard = gtk_clipboard_get (gdk_atom_intern ("PRIMARY", FALSE));
-  gtk_clipboard_set_text (clipboard, buffer, (gint) (size * nmemb));
-
-  sprintf (command, "xdg-open %s", buffer);
-  system (command);
-}
-
-static void
-upload_image (const char *filename)
-{
-  time_t                now;
-  struct tm            *timeinfo;
-  char                  timebuf[64];
-  CURL                 *handle;
-  struct curl_httppost *post = NULL, *last = NULL;
-
-  time (&now);
-  timeinfo  = localtime (&now);
-  strftime (timebuf, 64, "%Y%m%d%H%M%S", timeinfo);
-
-  handle = curl_easy_init ();
-
-  curl_easy_setopt (handle, CURLOPT_URL, "http://gyazo.com/upload.cgi");
-  curl_easy_setopt (handle, CURLOPT_WRITEFUNCTION, on_image_uploaded);
-
-  curl_formadd (&post, &last, CURLFORM_COPYNAME, "id",
-                CURLFORM_COPYCONTENTS, timebuf, CURLFORM_END);
-  curl_formadd (&post, &last, CURLFORM_COPYNAME, "imagedata",
-                CURLFORM_FILE, filename, CURLFORM_END);
-  curl_easy_setopt (handle, CURLOPT_HTTPPOST, post);
-
-  curl_easy_perform (handle);
-
-  curl_formfree (post);
-  curl_easy_cleanup (handle);
-}
-
 static void
 select_area_button_press (XKeyEvent    *event,
                           GdkRectangle *rect,
@@ -306,8 +258,6 @@ select_area ()
 
 /* -- Screenshot -- */
 
-
-
 /* -- Status icon -- */
 
 static void
@@ -316,6 +266,7 @@ on_status_icon_activate (GtkStatusIcon *status_icon,
 {
   GdkRectangle *rectangle;
   GdkPixbuf    *screenshot;
+  GtkClipboard *clipboard;
 
   rectangle  = select_area ();
   if (rectangle == NULL)
@@ -323,10 +274,9 @@ on_status_icon_activate (GtkStatusIcon *status_icon,
 
   screenshot = get_screenshot_rectangle (rectangle);
 
-  gdk_pixbuf_savev (screenshot, "/tmp/.gyazo.png", "png", NULL, NULL, NULL);
-  g_free (rectangle);
-  
-  upload_image ("/tmp/.gyazo.png");
+  clipboard = gtk_clipboard_get (gdk_atom_intern ("CLIPBOARD", FALSE));
+  gtk_clipboard_set_image (clipboard, screenshot);
+
 }
 
 static void
