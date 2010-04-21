@@ -1,5 +1,5 @@
-bin_PROGRAMS = gyazolinux
+bin_PROGRAMS = screenshot-grabber
 
-gyazolinux_SOURCES = gyazolinux.c 
-gyazolinux_CFLAGS  = $(GYAZOLINUX_CFLAGS)
-gyazolinux_LDFLAGS = $(GYAZOLINUX_LIBS)
+screenshot_grabber_SOURCES = screenshot-grabber.c 
+screenshot_grabber_CFLAGS  = $(GYAZOLINUX_CFLAGS)
+screenshot_grabber_LDFLAGS = $(GYAZOLINUX_LIBS)
