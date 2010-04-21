@@ -21,11 +21,8 @@ along with Gyazolinux.  If not, see <http://www.gnu.org/licenses/>.
 #include <time.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
-#include <curl/curl.h>
 
 #include "config.h"
-
-GtkStatusIcon *status_icon = NULL;
 
 static void
 select_area_button_press (XKeyEvent    *event,
@@ -256,87 +253,26 @@ select_area ()
   return rectangle;
 }
 
-/* -- Screenshot -- */
-
-/* -- Status icon -- */
-
-static void
-on_status_icon_activate (GtkStatusIcon *status_icon,
-                         gpointer       user_data)
-{
-  GdkRectangle *rectangle;
-  GdkPixbuf    *screenshot;
-  GtkClipboard *clipboard;
-
-  rectangle  = select_area ();
-  if (rectangle == NULL)
-    return;
-
-  screenshot = get_screenshot_rectangle (rectangle);
-
-  clipboard = gtk_clipboard_get (gdk_atom_intern ("CLIPBOARD", FALSE));
-  gtk_clipboard_set_image (clipboard, screenshot);
-
-}
-
-static void
-on_status_icon_popup_menu (GtkStatusIcon *status_icon,
-                           guint          button,
-                           guint          activate_time,
-                           gpointer       user_data)
-{
-  GtkWidget *menu = (GtkWidget *) user_data;
-  gtk_menu_popup (GTK_MENU (menu), NULL, NULL, gtk_status_icon_position_menu,
-                  status_icon, button, activate_time);
-}
-
-static void
-on_menu_quit_activate (GtkMenuItem *item,
-                       gpointer     user_data)
-{
-    gtk_main_quit ();
-}
-
-static void
-create_status_icon ()
-{
-  GtkWidget *menu;
-  GtkWidget *item;
-
-  menu = gtk_menu_new ();
-
-  item = gtk_image_menu_item_new_from_stock (GTK_STOCK_PREFERENCES, NULL);
-  gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-
-  item = gtk_image_menu_item_new_from_stock (GTK_STOCK_ABOUT, NULL);
-  gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-
-  item = gtk_separator_menu_item_new ();
-  gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-
-  item = gtk_image_menu_item_new_from_stock (GTK_STOCK_QUIT, NULL);
-  g_signal_connect (G_OBJECT (item), "activate",
-                    G_CALLBACK (on_menu_quit_activate), NULL);
-  gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-
-  gtk_widget_show_all (menu);
-
-  status_icon = gtk_status_icon_new_from_icon_name ("gyazo-linux");
-  g_signal_connect (G_OBJECT (status_icon), "activate", 
-                    G_CALLBACK (on_status_icon_activate), NULL);
-  g_signal_connect (G_OBJECT (status_icon), "popup-menu",
-                    G_CALLBACK (on_status_icon_popup_menu), menu);
-}
-
 /* -- Main -- */
 
 int
 main (int    argc,
       char **argv)
 {
+  GdkRectangle *rectangle;
+  GdkPixbuf    *screenshot;
+  GtkClipboard *clipboard;
+
   gtk_init (&argc, &argv);
-  create_status_icon ();
-  gtk_main ();
+
+  rectangle  = select_area ();
+  if (rectangle == NULL)
+    return -1;
+
+  screenshot = get_screenshot_rectangle (rectangle);
+
+  clipboard = gtk_clipboard_get (gdk_atom_intern ("CLIPBOARD", FALSE));
+  gtk_clipboard_set_image (clipboard, screenshot);
 
   return 0;
 }
