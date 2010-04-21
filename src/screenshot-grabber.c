@@ -191,14 +191,7 @@ select_area ()
       return FALSE;
     }
 
-  /*
-  if (gdk_keyboard_grab (root, FALSE, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
-    {
-      gdk_pointer_ungrab (GDK_CURRENT_TIME);
-      gdk_cursor_unref (cursor);
-      return FALSE;
-    }
-  */
+  gdk_keyboard_grab (root, FALSE, GDK_CURRENT_TIME);
 
   gdk_window_add_filter (root, (GdkFilterFunc) select_area_filter, &data);
 
