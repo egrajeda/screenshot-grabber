@@ -22,6 +22,7 @@ along with Gyazolinux.  If not, see <http://www.gnu.org/licenses/>.
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
 #include <dbus/dbus.h>
+#include <dbus/dbus-glib-lowlevel.h>
 
 #include "config.h"
 
@@ -254,53 +255,89 @@ select_area ()
   return rectangle;
 }
 
-static int
-is_primary_instance ()
-{ 
-  int             ret;
-  DBusError       err = {0};
-  DBusConnection *bus;
-
-  bus = dbus_bus_get (DBUS_BUS_SESSION, &err);
-  if (dbus_error_is_set (&err))
-    goto error;
-
-  ret = dbus_bus_request_name (bus, "org.gnome.screenshot-grabber.Screenshot",
-                               DBUS_NAME_FLAG_DO_NOT_QUEUE, &err);
-  if (dbus_error_is_set (&err))
-    goto error;
-
-  if (ret == DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER)
-    return 1;
-
-error:
-  dbus_error_free (&err);
-
-  return 0;
-}
-
-/* -- Main -- */
-
-int
-main (int    argc,
-      char **argv)
+static void
+take_screenshot ()
 {
   GdkRectangle *rectangle;
   GdkPixbuf    *screenshot;
   GtkClipboard *clipboard;
 
-  gtk_init (&argc, &argv);
-
   rectangle  = select_area ();
   if (rectangle == NULL)
-    return -1;
+    return;
 
   screenshot = get_screenshot_rectangle (rectangle);
 
   clipboard = gtk_clipboard_get (gdk_atom_intern ("CLIPBOARD", FALSE));
   gtk_clipboard_set_image (clipboard, screenshot);
+}
+
+/* -- Main -- */
+
+DBusHandlerResult dbus_handler (DBusConnection *bus,
+                                DBusMessage    *message,
+                                void           *user_data)
+{
+  if (dbus_message_is_signal (message, "org.gnome.ScreenshotGrabber",
+                              "take_screenshot"))
+    {
+      take_screenshot ();
+      DBUS_HANDLER_RESULT_HANDLED; 
+    }
+  return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+}
+
+int
+main (int    argc,
+      char **argv)
+{
+  int             ret;
+  DBusConnection *bus;
+  DBusMessage    *msg;
+  DBusError       err = {0};
+
+  system("export");
+
+  gtk_init (&argc, &argv);
+
+  bus = dbus_bus_get (DBUS_BUS_SESSION, &err);
+  if (dbus_error_is_set (&err))
+    goto exit;
+
+  ret = dbus_bus_request_name (bus, "org.gnome.ScreenshotGrabber",
+                               DBUS_NAME_FLAG_DO_NOT_QUEUE, &err);
+  if (dbus_error_is_set (&err))
+    goto exit;
+
+  if (ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER)
+    {
+      msg = dbus_message_new_signal ("/org/gnome/ScreenshotGrabber",
+                                     "org.gnome.ScreenshotGrabber",
+                                     "take_screenshot");
+      dbus_connection_send (bus, msg, NULL);
+      dbus_message_unref (msg);
+      return 0;
+    }
+
+  dbus_connection_setup_with_g_main (bus, NULL);
+
+  dbus_bus_add_match (bus, "type='signal',"
+      "interface='org.gnome.ScreenshotGrabber',"
+      "path='/org/gnome/ScreenshotGrabber'", &err);
+  if (dbus_error_is_set (&err))
+    goto exit;
+  dbus_connection_add_filter (bus, dbus_handler, NULL, NULL);
+
+  take_screenshot ();
 
   gtk_main ();
+
+exit:
+  if (dbus_error_is_set (&err))
+    {
+      fprintf (stderr, "[E] DBus: %s\n", err.message);
+      dbus_error_free (&err);
+    }
 
   return 0;
 }

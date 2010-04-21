@@ -23,6 +23,7 @@ PKG_CHECK_MODULES(SCREENSHOT_GRABBER, [
     gtk+-2.0 >= 2.20
     gdk-2.0 >= 2.20
     dbus-1 >= 1.2
+    dbus-glib-1 >= 0.8
 ])
 
 AC_CONFIG_FILES([
