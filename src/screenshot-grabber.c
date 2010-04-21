@@ -21,6 +21,7 @@ along with Gyazolinux.  If not, see <http://www.gnu.org/licenses/>.
 #include <time.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
+#include <dbus/dbus.h>
 
 #include "config.h"
 
@@ -251,6 +252,31 @@ select_area ()
   rectangle->height = data.rect.height + 1;
 
   return rectangle;
+}
+
+static int
+is_primary_instance ()
+{ 
+  int             ret;
+  DBusError       err;
+  DBusConnection *bus;
+
+  bus = dbus_bus_get (DBUS_BUS_SESSION, &err);
+  if (dbus_error_is_set (&err))
+    goto error;
+
+  ret = dbus_bus_request_name (bus, "org.gnome.screenshot-grabber.Screenshot",
+                               DBUS_NAME_FLAG_DO_NOT_QUEUE, &err);
+  if (dbus_error_is_set (&err))
+    goto error;
+
+  if (ret == DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER)
+    return 1;
+
+error:
+  dbus_error_free (&err);
+
+  return 0;
 }
 
 /* -- Main -- */
