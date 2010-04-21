@@ -258,7 +258,7 @@ static int
 is_primary_instance ()
 { 
   int             ret;
-  DBusError       err;
+  DBusError       err = {0};
   DBusConnection *bus;
 
   bus = dbus_bus_get (DBUS_BUS_SESSION, &err);
